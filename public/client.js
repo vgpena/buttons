@@ -3,6 +3,10 @@ const myButtonID = 9;
 const fileUrl = 'buttons.mp3';
 
 const track = new Pizzicato.Sound(fileUrl);
+var delay = new Pizzicato.Effects.Delay({
+    gain: 0.4
+});
+track.addEffect(delay);
 const tracks = new Pizzicato.Group();
 
 tracks.addSound(track);
@@ -31,9 +35,9 @@ function loop() {
             stop: 0,
         }
         const newTrack = track.clone();
+        // newTrack.frequency = 440 * 8;
         tracks.addSound(newTrack);
         newTrack.play(loops[loops.length - 1].start);
-        // console.log(tracks.sounds);
     }
 }
 
