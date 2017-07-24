@@ -3,6 +3,10 @@ const myButtonID = 9;
 const fileUrl = 'buttons.mp3';
 
 const track = new Pizzicato.Sound(fileUrl);
+const tracks = new Pizzicato.Group();
+
+tracks.addSound(track);
+
 let currTrackTime = 0;
 let currTime = Pizzicato.context.currentTime;
 let loops = [];
@@ -26,7 +30,10 @@ function loop() {
             start: 0,
             stop: 0,
         }
-        console.log(JSON.stringify(loops));
+        const newTrack = track.clone();
+        tracks.addSound(newTrack);
+        newTrack.play(loops[loops.length - 1].start);
+        // console.log(tracks.sounds);
     }
 }
 
@@ -37,10 +44,10 @@ function setTrackTime() {
 // // ===== interaction / button events
 function parseButtonData(data) {
     if (data.b0) {
-        track.play();
+        tracks.play();
         currTime = Pizzicato.context.currentTime;
     } else if (data.b1) {
-        track.pause();
+        tracks.pause();
         currTime = Pizzicato.context.currentTime;
     } else if (data.b2) {
         loop();
