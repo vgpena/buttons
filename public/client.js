@@ -10,18 +10,14 @@ const tracks = [source];
 let playing = false;
 let newLoop = true;
 
-let currentTime = 0;
-console.log(currentTime);
+let startTime = 0;
 let currentTrackTime = 0;
 
-let currLoop = {
-    start: 0,
-    stop: 0,
-};
+let currLoop = {};
 
 function play() {
     playing = true;
-    currentTime = context.currentTime;
+    startTime = context.currentTime;
     tracks.forEach((src) => {
         src.connect(context.destination);
     });
@@ -29,7 +25,6 @@ function play() {
 
 function pause() {
     playing = false;
-    currentTime = context.currentTime;
     tracks.forEach((src) => {
         src.disconnect(context.destination);
     });
@@ -39,27 +34,21 @@ function loop() {
     if (!playing) {
         return;
     }
-    currentTrackTime += context.currentTime - currentTime
     if (newLoop) {
-        currLoop.start = currentTrackTime;
+        currLoop.start = context.currentTime - startTime;
         newLoop = false;
     } else {
+        currLoop.stop = context.currentTime - startTime;
         newLoop = true;
-        currLoop.stop = currentTrackTime;
         const src = context.createBufferSource();
         src.buffer = buffer;
         src.loop = true;
         src.loopStart = currLoop.start;
         src.loopEnd = currLoop.stop;
-        src.start();
+        src.start(0, currLoop.start);
 
         tracks.push(src);
         play();
-
-        currLoop = {
-            start: 0,
-            stop: 0,
-        };
     }
 }
 
