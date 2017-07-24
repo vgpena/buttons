@@ -12,5 +12,8 @@
   "bugs": {
     "url": "https://github.com/vgpena/buttons/issues"
   },
-  "homepage": "https://github.com/vgpena/buttons#readme"
+  "homepage": "https://github.com/vgpena/buttons#readme",
+  "dependencies": {
+    "express": "^4.15.3"
+  }
 }
