@@ -8,8 +8,10 @@ const source = context.createBufferSource();
 
 const tracks = [source];
 let playing = false;
+let newLoop = true;
 
-let currentTime = context.currentTime;
+let currentTime = 0;
+console.log(currentTime);
 let currentTrackTime = 0;
 
 let currLoop = {
@@ -19,7 +21,7 @@ let currLoop = {
 
 function play() {
     playing = true;
-    currTime = context.currentTime;
+    currentTime = context.currentTime;
     tracks.forEach((src) => {
         src.connect(context.destination);
     });
@@ -38,9 +40,11 @@ function loop() {
         return;
     }
     currentTrackTime += context.currentTime - currentTime
-    if (currLoop.start === currLoop.stop) {
+    if (newLoop) {
         currLoop.start = currentTrackTime;
+        newLoop = false;
     } else {
+        newLoop = true;
         currLoop.stop = currentTrackTime;
         const src = context.createBufferSource();
         src.buffer = buffer;
