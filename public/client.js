@@ -2,7 +2,6 @@ const socket = io.connect('10.0.0.145:3000/');
 const myButtonID = 9;
 const fileUrl = 'buttons.mp3';
 
-// const track = new Pizzicato.Sound(fileUrl);
 const context = new AudioContext();
 let buffer = null;
 const source = context.createBufferSource();
@@ -10,10 +9,9 @@ const source = context.createBufferSource();
 const tracks = [source];
 let playing = false;
 
-let startTime = context.currentTime;
-let currentTime = 0;
+let currentTime = context.currentTime;
+let currentTrackTime = 0;
 
-let loops = [];
 let currLoop = {
     start: 0,
     stop: 0,
@@ -21,6 +19,7 @@ let currLoop = {
 
 function play() {
     playing = true;
+    currTime = context.currentTime;
     tracks.forEach((src) => {
         src.connect(context.destination);
     });
@@ -28,6 +27,7 @@ function play() {
 
 function pause() {
     playing = false;
+    currentTime = context.currentTime;
     tracks.forEach((src) => {
         src.disconnect(context.destination);
     });
@@ -37,16 +37,16 @@ function loop() {
     if (!playing) {
         return;
     }
-
+    currentTrackTime += context.currentTime - currentTime
     if (currLoop.start === currLoop.stop) {
-        currLoop.start = currentTime;
+        currLoop.start = currentTrackTime;
     } else {
-        currLoop.stop = currentTime;
+        currLoop.stop = currentTrackTime;
         const src = context.createBufferSource();
         src.buffer = buffer;
         src.loop = true;
-        src.loopStart = 0;
-        src.loopEnd = 3;
+        src.loopStart = currLoop.start;
+        src.loopEnd = currLoop.stop;
         src.start();
 
         tracks.push(src);
@@ -62,16 +62,17 @@ function loop() {
 // // ===== interaction / button events
 function parseButtonData(data) {
     if (data.b0) {
-        play();
+        if (!playing) {
+            play();
+        } else {
+            pause();
+        }
     } else if (data.b1) {
-        pause();
-    } else if (data.b2) {
         loop();
     }
 }
 
 // setup
-
 window.fetch(fileUrl)
     .then(response => response.arrayBuffer())
     .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
@@ -80,7 +81,6 @@ window.fetch(fileUrl)
         source.buffer = buffer;
         source.loop = true;
         source.start();
-        // console.log(audioBuffer.duration);
     });
 
 socket.on('buttonUpdate', (data) => {
