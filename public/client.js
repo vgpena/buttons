@@ -6,8 +6,9 @@ const context = new AudioContext();
 let buffer = null;
 const source = context.createBufferSource();
 
-const tracks = [source];
+let tracks = [source];
 let playing = false;
+let reverse = false;
 let newLoop = true;
 
 let startTime = 0;
@@ -41,15 +42,50 @@ function loop() {
         currLoop.stop = context.currentTime - startTime;
         newLoop = true;
         const src = context.createBufferSource();
-        src.buffer = buffer;
+        src.buffer = cloneAudioBuffer(buffer);
+        if (reverse) {
+            Array.prototype.reverse.call(src.buffer.getChannelData(0));
+            Array.prototype.reverse.call(src.buffer.getChannelData(1));
+            currLoop.start = src.buffer.duration - currLoop.start;
+            currLoop.stop = src.buffer.duration - currLoop.stop;
+        }
         src.loop = true;
         src.loopStart = currLoop.start;
         src.loopEnd = currLoop.stop;
-        src.start(0, currLoop.start);
+        src.start(0, context.currentTime - startTime);
 
         tracks.push(src);
         play();
     }
+}
+
+function toggleRev() {
+    reverse = !reverse;
+}
+
+// https://stackoverflow.com/questions/12484052/how-can-i-reverse-playback-in-web-audio-api-but-keep-a-forward-version-as-well
+function cloneAudioBuffer(audioBuffer){
+    var channels = [],
+        numChannels = audioBuffer.numberOfChannels;
+
+    //clone the underlying Float32Arrays
+    for (var i = 0; i < numChannels; i++){
+        channels[i] = new Float32Array(audioBuffer.getChannelData(i));
+    }
+
+    //create the new AudioBuffer (assuming AudioContext variable is in scope)
+    var newBuffer = context.createBuffer(
+                        audioBuffer.numberOfChannels,
+                        audioBuffer.length,
+                        audioBuffer.sampleRate
+                    );
+
+    //copy the cloned arrays to the new AudioBuffer
+    for (var i = 0; i < numChannels; i++){
+        newBuffer.getChannelData(i).set(channels[i]);
+    }
+
+    return newBuffer;
 }
 
 // // ===== interaction / button events
@@ -62,6 +98,8 @@ function parseButtonData(data) {
         }
     } else if (data.b1) {
         loop();
+    } else if (data.b2) {
+        toggleRev();
     }
 }
 
