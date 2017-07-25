@@ -52,6 +52,7 @@ function loop() {
         src.loop = true;
         src.loopStart = currLoop.start;
         src.loopEnd = currLoop.stop;
+        console.log(src);
         src.start(0, context.currentTime - startTime);
 
         tracks.push(src);
@@ -65,6 +66,7 @@ function toggleRev() {
 
 // https://stackoverflow.com/questions/12484052/how-can-i-reverse-playback-in-web-audio-api-but-keep-a-forward-version-as-well
 function cloneAudioBuffer(audioBuffer){
+    // console.log(start, stop);
     var channels = [],
         numChannels = audioBuffer.numberOfChannels;
 
@@ -117,5 +119,25 @@ window.fetch(fileUrl)
 socket.on('buttonUpdate', (data) => {
     if (data.id === 9) {
         parseButtonData(data);
+    }
+});
+
+document.addEventListener('keydown', (e) => {
+    switch (e.key) {
+        case "a":
+            if (!playing) {
+                play();
+            } else {
+                pause();
+            }
+            break;
+        case "s":
+            loop();
+            break;
+        case "d":
+            toggleRev();
+            break;
+        default:
+            break;
     }
 });
