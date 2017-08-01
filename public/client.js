@@ -13,11 +13,17 @@ const keys = [
         name: "m",
         function: "muteOrUnmute",
         functionName: "Mute/Unmute",
-    }
+    },
+    {
+        key: "ArrowLeft",
+        name: "Left Arrow",
+        function: "restart",
+        functionName: "Restart",
+    },
 ];
 const context = new AudioContext();
 let buffer = null;
-const source = context.createBufferSource();
+let source = context.createBufferSource();
 const gainNode = context.createGain();
 
 let tracks = [source];
@@ -126,6 +132,19 @@ function muteOrUnmute() {
     unmute();
 }
 
+function restart() {
+    tracks[0].stop();
+    tracks[0].disconnect(context.destination);
+    const newSource = context.createBufferSource();
+    newSource.buffer = cloneAudioBuffer(buffer);
+    tracks[0] = newSource;
+    newSource.start();
+    newSource.connect(gainNode);
+    if (playing) {
+        play();
+    }
+}
+
 // ======== second-order functions;
 // ==== i.e, ones executed by first-order functions
 function play() {
@@ -161,16 +180,21 @@ window.fetch(fileUrl)
     .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
     .then(audioBuffer => {
         buffer = audioBuffer;
-        source.buffer = buffer;
-        source.loop = true;
-        source.start();
-        source.connect(gainNode);
+        tracks[0].buffer = buffer;
+        tracks[0].loop = true;
+        tracks[0].start();
+        tracks[0].connect(gainNode);
     });
 
 document.addEventListener('keydown', (e) => {
     const index = keys.find((key) => key.key === e.key);
     if (!index) {
         console.error(`No function bound to key ${ e.key }`);
+        return;
+    }
+
+    if (!window[index.function]) {
+        console.error(`No function with name ${ index.function } exists`);
         return;
     }
 
