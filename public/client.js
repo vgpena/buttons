@@ -7,14 +7,22 @@ const keys = [
         name: "Space",
         function: "playOrPause",
         functionName: "Play/Pause"
+    },
+    {
+        key: "m",
+        name: "m",
+        function: "muteOrUnmute",
+        functionName: "Mute/Unmute",
     }
 ];
 const context = new AudioContext();
 let buffer = null;
 const source = context.createBufferSource();
+const gainNode = context.createGain();
 
 let tracks = [source];
 let playing = false;
+let muted = false;
 let reverse = false;
 let newLoop = true;
 
@@ -107,6 +115,17 @@ function playOrPause() {
     pause();
 }
 
+function muteOrUnmute() {
+    if (!playing) {
+        return;
+    }
+    if (!muted) {
+        mute();
+        return;
+    }
+    unmute();
+}
+
 // ======== second-order functions;
 // ==== i.e, ones executed by first-order functions
 function play() {
@@ -124,6 +143,18 @@ function pause() {
     });
 }
 
+function mute() {
+    muted = true;
+    gainNode.connect(context.destination);
+    gainNode.gain.value = -1;
+}
+
+function unmute() {
+    muted = false;
+    gainNode.disconnect(context.destination);
+    gainNode.gain.value = 1;
+}
+
 // setup
 window.fetch(fileUrl)
     .then(response => response.arrayBuffer())
@@ -133,11 +164,15 @@ window.fetch(fileUrl)
         source.buffer = buffer;
         source.loop = true;
         source.start();
+        source.connect(gainNode);
     });
 
 document.addEventListener('keydown', (e) => {
     const index = keys.find((key) => key.key === e.key);
-    if (index) {
-        window[index.function]();
+    if (!index) {
+        console.error(`No function bound to key ${ e.key }`);
+        return;
     }
+
+    window[index.function]();
 });
