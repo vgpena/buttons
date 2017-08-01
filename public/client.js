@@ -1,7 +1,14 @@
-const socket = io.connect('10.0.0.145:3000/');
+// const socket = io.connect('10.0.0.145:3000/');
 const myButtonID = 9;
 const fileUrl = 'buttons.mp3';
-
+const keys = [
+    {
+        key: " ",
+        name: "Space",
+        function: "playOrPause",
+        functionName: "Play/Pause"
+    }
+];
 const context = new AudioContext();
 let buffer = null;
 const source = context.createBufferSource();
@@ -15,21 +22,6 @@ let startTime = 0;
 let currentTrackTime = 0;
 
 let currLoop = {};
-
-function play() {
-    playing = true;
-    startTime = context.currentTime;
-    tracks.forEach((src) => {
-        src.connect(context.destination);
-    });
-}
-
-function pause() {
-    playing = false;
-    tracks.forEach((src) => {
-        src.disconnect(context.destination);
-    });
-}
 
 function loop() {
     if (!playing) {
@@ -91,18 +83,45 @@ function cloneAudioBuffer(audioBuffer){
 }
 
 // // ===== interaction / button events
-function parseButtonData(data) {
-    if (data.b0) {
-        if (!playing) {
-            play();
-        } else {
-            pause();
-        }
-    } else if (data.b1) {
-        loop();
-    } else if (data.b2) {
-        toggleRev();
+// function parseButtonData(data) {
+//     if (data.b0) {
+//         if (!playing) {
+//             play();
+//         } else {
+//             pause();
+//         }
+//     } else if (data.b1) {
+//         loop();
+//     } else if (data.b2) {
+//         toggleRev();
+//     }
+// }
+
+// ======== first-order functions;
+// ==== i.e., ones directly executed via keypress
+function playOrPause() {
+    if (!playing) {
+        play();
+        return;
     }
+    pause();
+}
+
+// ======== second-order functions;
+// ==== i.e, ones executed by first-order functions
+function play() {
+    playing = true;
+    startTime = context.currentTime;
+    tracks.forEach((src) => {
+        src.connect(context.destination);
+    });
+}
+
+function pause() {
+    playing = false;
+    tracks.forEach((src) => {
+        src.disconnect(context.destination);
+    });
 }
 
 // setup
@@ -116,28 +135,9 @@ window.fetch(fileUrl)
         source.start();
     });
 
-socket.on('buttonUpdate', (data) => {
-    if (data.id === 9) {
-        parseButtonData(data);
-    }
-});
-
 document.addEventListener('keydown', (e) => {
-    switch (e.key) {
-        case "a":
-            if (!playing) {
-                play();
-            } else {
-                pause();
-            }
-            break;
-        case "s":
-            loop();
-            break;
-        case "d":
-            toggleRev();
-            break;
-        default:
-            break;
+    const index = keys.find((key) => key.key === e.key);
+    if (index) {
+        window[index.function]();
     }
 });
