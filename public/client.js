@@ -20,6 +20,12 @@ const keys = [
         function: "restart",
         functionName: "Restart",
     },
+    {
+        key: "Enter",
+        name: "Enter",
+        function: "defineLoopEndpoint",
+        functionName: "Start/End Loop",
+    }
 ];
 const context = new AudioContext();
 let buffer = null;
@@ -37,79 +43,9 @@ let currentTrackTime = 0;
 
 let currLoop = {};
 
-function loop() {
-    if (!playing) {
-        return;
-    }
-    if (newLoop) {
-        currLoop.start = context.currentTime - startTime;
-        newLoop = false;
-    } else {
-        currLoop.stop = context.currentTime - startTime;
-        newLoop = true;
-        const src = context.createBufferSource();
-        src.buffer = cloneAudioBuffer(buffer);
-        if (reverse) {
-            Array.prototype.reverse.call(src.buffer.getChannelData(0));
-            Array.prototype.reverse.call(src.buffer.getChannelData(1));
-            currLoop.start = src.buffer.duration - currLoop.start;
-            currLoop.stop = src.buffer.duration - currLoop.stop;
-        }
-        src.loop = true;
-        src.loopStart = currLoop.start;
-        src.loopEnd = currLoop.stop;
-        console.log(src);
-        src.start(0, context.currentTime - startTime);
-
-        tracks.push(src);
-        play();
-    }
-}
-
 function toggleRev() {
     reverse = !reverse;
 }
-
-// https://stackoverflow.com/questions/12484052/how-can-i-reverse-playback-in-web-audio-api-but-keep-a-forward-version-as-well
-function cloneAudioBuffer(audioBuffer){
-    // console.log(start, stop);
-    var channels = [],
-        numChannels = audioBuffer.numberOfChannels;
-
-    //clone the underlying Float32Arrays
-    for (var i = 0; i < numChannels; i++){
-        channels[i] = new Float32Array(audioBuffer.getChannelData(i));
-    }
-
-    //create the new AudioBuffer (assuming AudioContext variable is in scope)
-    var newBuffer = context.createBuffer(
-                        audioBuffer.numberOfChannels,
-                        audioBuffer.length,
-                        audioBuffer.sampleRate
-                    );
-
-    //copy the cloned arrays to the new AudioBuffer
-    for (var i = 0; i < numChannels; i++){
-        newBuffer.getChannelData(i).set(channels[i]);
-    }
-
-    return newBuffer;
-}
-
-// // ===== interaction / button events
-// function parseButtonData(data) {
-//     if (data.b0) {
-//         if (!playing) {
-//             play();
-//         } else {
-//             pause();
-//         }
-//     } else if (data.b1) {
-//         loop();
-//     } else if (data.b2) {
-//         toggleRev();
-//     }
-// }
 
 // ======== first-order functions;
 // ==== i.e., ones directly executed via keypress
@@ -145,20 +81,45 @@ function restart() {
     }
 }
 
+function defineLoopEndpoint() {
+    if (!playing) {
+        return;
+    }
+    if (newLoop) {
+        currLoop.start = context.currentTime - startTime;
+        newLoop = false;
+        return;
+    }
+
+    currLoop.stop = context.currentTime - startTime;
+    newLoop = true;
+    const src = context.createBufferSource();
+    src.buffer = cloneAudioBuffer(tracks[0].buffer, currLoop.start, currLoop.stop);
+    src.loop = true;
+    src.start();
+
+    tracks.push(src);
+    connectAllTracks();
+}
+
 // ======== second-order functions;
 // ==== i.e, ones executed by first-order functions
 function play() {
     playing = true;
     startTime = context.currentTime;
-    tracks.forEach((src) => {
-        src.connect(context.destination);
-    });
+    connectAllTracks();
 }
 
 function pause() {
     playing = false;
     tracks.forEach((src) => {
         src.disconnect(context.destination);
+    });
+}
+
+function connectAllTracks() {
+    tracks.forEach((src) => {
+        src.connect(context.destination);
     });
 }
 
@@ -172,6 +133,31 @@ function unmute() {
     muted = false;
     gainNode.disconnect(context.destination);
     gainNode.gain.value = 1;
+}
+
+// ======== utility functions
+// ==== data manipulation, etc.
+// https://stackoverflow.com/questions/12484052/how-can-i-reverse-playback-in-web-audio-api-but-keep-a-forward-version-as-well
+function cloneAudioBuffer(audioBuffer, start = 0, stop = audioBuffer.duration) {
+    const channels = [];
+    const numChannels = audioBuffer.numberOfChannels;
+
+    const startIndex = Math.floor((start / audioBuffer.duration) * audioBuffer.length);    
+    const stopIndex = Math.floor((stop / audioBuffer.duration) * audioBuffer.length);
+    //clone the underlying Float32Arrays
+    for (let i = 0; i < numChannels; i++) {
+        channels[i] = new Float32Array(audioBuffer.getChannelData(i)).slice(startIndex, stopIndex);
+    }
+
+    //create the new AudioBuffer (assuming AudioContext variable is in scope)
+    const newBuffer = context.createBuffer(audioBuffer.numberOfChannels, stopIndex - startIndex, audioBuffer.sampleRate);
+
+    //copy the cloned arrays to the new AudioBuffer
+    for (let i = 0; i < numChannels; i++) {
+        newBuffer.getChannelData(i).set(channels[i]);
+    }
+
+    return newBuffer;
 }
 
 // setup
