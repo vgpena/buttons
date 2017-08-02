@@ -25,6 +25,12 @@ const keys = [
         name: "Enter",
         function: "defineLoopEndpoint",
         functionName: "Start/End Loop",
+    },
+    {
+        key: "Backspace",
+        name: "Backspace",
+        function: "eraseLastLoop",
+        functionName: "Erase Last Loop",
     }
 ];
 const context = new AudioContext();
@@ -100,6 +106,15 @@ function defineLoopEndpoint() {
 
     tracks.push(src);
     connectAllTracks();
+}
+
+function eraseLastLoop() {
+    if (tracks.length === 1) {
+        console.error('No loops to erase!');
+        return;
+    }
+    tracks[tracks.length - 1].disconnect(context.destination);
+    tracks.pop();
 }
 
 // ======== second-order functions;
