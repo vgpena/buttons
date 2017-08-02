@@ -43,6 +43,9 @@ const context = new AudioContext();
 let buffer = null;
 let source = context.createBufferSource();
 const gainNode = context.createGain();
+const analyserNode = context.createAnalyser();
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 
 let tracks = [source];
 let playing = false;
@@ -184,7 +187,32 @@ function cloneAudioBuffer(audioBuffer, start = 0, stop = audioBuffer.duration, r
     return newBuffer;
 }
 
-// setup
+// ======== visualization
+function draw(dataArray) {
+    analyserNode.getByteFrequencyData(dataArray);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgb(0, 0, 0)';
+    ctx.fillRect(0, 0, 1000, 400);
+    const width = 1000 / dataArray.length;
+    for (let i = 0; i < dataArray.length; i++) {
+        const height = dataArray[i];
+        ctx.fillStyle = 'yellow';
+        ctx.fillRect(width * i, 0, width, height);
+    }
+    requestAnimationFrame(() => draw(dataArray));
+}
+
+function drawBackgroundTrack() {
+    analyserNode.fftSize = 256;
+    const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+    draw(dataArray);
+}
+
+function startVisualization() {
+    drawBackgroundTrack();
+}
+
+//========================= setup
 window.fetch(fileUrl)
     .then(response => response.arrayBuffer())
     .then(arrayBuffer => context.decodeAudioData(arrayBuffer))
@@ -194,6 +222,8 @@ window.fetch(fileUrl)
         tracks[0].loop = true;
         tracks[0].start();
         tracks[0].connect(gainNode);
+        tracks[0].connect(analyserNode);
+        startVisualization();
     });
 
 document.addEventListener('keydown', (e) => {
