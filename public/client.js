@@ -31,7 +31,13 @@ const keys = [
         name: "Backspace",
         function: "eraseLastLoop",
         functionName: "Erase Last Loop",
-    }
+    },
+    {
+        key: "Shift",
+        name: "Shift",
+        function: "toggleRev",
+        functionName: "Toggle Reverse",
+    },
 ];
 const context = new AudioContext();
 let buffer = null;
@@ -48,10 +54,6 @@ let startTime = 0;
 let currentTrackTime = 0;
 
 let currLoop = {};
-
-function toggleRev() {
-    reverse = !reverse;
-}
 
 // ======== first-order functions;
 // ==== i.e., ones directly executed via keypress
@@ -100,7 +102,7 @@ function defineLoopEndpoint() {
     currLoop.stop = context.currentTime - startTime;
     newLoop = true;
     const src = context.createBufferSource();
-    src.buffer = cloneAudioBuffer(tracks[0].buffer, currLoop.start, currLoop.stop);
+    src.buffer = cloneAudioBuffer(tracks[0].buffer, currLoop.start, currLoop.stop, reverse);
     src.loop = true;
     src.start();
 
@@ -115,6 +117,10 @@ function eraseLastLoop() {
     }
     tracks[tracks.length - 1].disconnect(context.destination);
     tracks.pop();
+}
+
+function toggleRev() {
+    reverse = !reverse;
 }
 
 // ======== second-order functions;
@@ -153,7 +159,7 @@ function unmute() {
 // ======== utility functions
 // ==== data manipulation, etc.
 // https://stackoverflow.com/questions/12484052/how-can-i-reverse-playback-in-web-audio-api-but-keep-a-forward-version-as-well
-function cloneAudioBuffer(audioBuffer, start = 0, stop = audioBuffer.duration) {
+function cloneAudioBuffer(audioBuffer, start = 0, stop = audioBuffer.duration, reverseBuffer = false) {
     const channels = [];
     const numChannels = audioBuffer.numberOfChannels;
 
@@ -162,6 +168,9 @@ function cloneAudioBuffer(audioBuffer, start = 0, stop = audioBuffer.duration) {
     //clone the underlying Float32Arrays
     for (let i = 0; i < numChannels; i++) {
         channels[i] = new Float32Array(audioBuffer.getChannelData(i)).slice(startIndex, stopIndex);
+        if (reverseBuffer) {
+            channels[i].reverse();
+        }
     }
 
     //create the new AudioBuffer (assuming AudioContext variable is in scope)
