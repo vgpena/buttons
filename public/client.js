@@ -45,6 +45,8 @@ let source = context.createBufferSource();
 const gainNode = context.createGain();
 const analyserNode = context.createAnalyser();
 const canvas = document.getElementById('canvas');
+canvas.width = window.innerWidth;
+canvas.height = 300;
 const ctx = canvas.getContext('2d');
 
 let tracks = [source];
@@ -197,8 +199,8 @@ function draw(dataArray) {
     analyserNode.getByteFrequencyData(dataArray);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'rgb(0, 0, 0)';
-    ctx.fillRect(0, 0, 1000, 400);
-    const width = 1000 / dataArray.length;
+    ctx.fillRect(0, 0, canvas.width, 400);
+    const width = canvas.width / dataArray.length;
     for (let i = 0; i < dataArray.length; i++) {
         const height = dataArray[i];
         ctx.fillStyle = 'yellow';
@@ -219,11 +221,13 @@ function startVisualization() {
 }
 
 function drawChunks(chunks) {
-    const width = 1000 / chunks.length;
-    ctx.fillStyle = 'yellow';
+    const space = 5;
+    const width = (canvas.width - chunks.length * space) / chunks.length;
+    const heightMultiplier = canvas.height * 2;
+    ctx.fillStyle = '#0dbc6a';
     for (let i = 0; i < chunks.length; i++) {
         const height = chunks[i];
-        ctx.fillRect(width * i, 200 - (height * 100), width, height * 200);
+        ctx.fillRect(width * i + space * i, canvas.height / 2 - (height * (heightMultiplier / 2)), width, height * heightMultiplier);
     }
 }
 
@@ -232,15 +236,15 @@ function drawEntireTrack() {
     const left = tracks[0].buffer.getChannelData(0);
     const right = tracks[0].buffer.getChannelData(1);
     // 2. chunk song
-    const numChunks = 256;
+    const numChunks = 64;
     const bytesPerChunk = Math.floor(left.length / numChunks);
     const chunks = new Array(numChunks);
     for (let i = 0; i < numChunks; i++) {
         chunks[i] = (left[i * bytesPerChunk] + right[i * bytesPerChunk]) / 2;
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgb(0, 0, 0)';
-    ctx.fillRect(0, 0, 1000, 400);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, 400);
     drawChunks(chunks);
 }
 
