@@ -219,20 +219,29 @@ function drawBackgroundTrack() {
 
 function startVisualization() {
     tracks[0].connect(analyserNode);
-    drawBackgroundTrack();
+    drawChunks();
+    // drawBackgroundTrack();
 }
 
 function drawChunks() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, 400);
     const space = 5;
     const width = (canvas.width - chunks.length * space) / chunks.length;
     const heightMultiplier = canvas.height * 2;
-    ctx.fillStyle = '#0dbc6a';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
     for (let i = 0; i < chunks.length; i++) {
         const height = chunks[i];
-        ctx.fillRect(width * i + space * i, canvas.height / 2 - (height * (heightMultiplier / 2)), width, height * heightMultiplier);
+        ctx.rect(width * i + space * i, canvas.height / 2 - (height * (heightMultiplier / 2)), width, height * heightMultiplier);
+    }
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = '#0dbc6a';
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
+    ctx.fillRect(0, 0, canvas.width * ((context.currentTime - startTime) / tracks[0].buffer.duration), canvas.height);
+    if (playing) {
+        requestAnimationFrame(drawChunks);
     }
 }
 
