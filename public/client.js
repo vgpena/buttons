@@ -48,7 +48,7 @@ const canvas = document.getElementById('canvas');
 canvas.width = window.innerWidth * 2;
 canvas.height = 300 * 2;
 const ctx = canvas.getContext('2d');
-const numChunks = 128;
+const numChunks = 124;
 const chunks = new Array(numChunks);
 
 let tracks = [source];
@@ -101,12 +101,12 @@ function defineLoopEndpoint() {
         return;
     }
     if (newLoop) {
-        currLoop.start = context.currentTime - startTime;
+        currLoop.start = currentTrackTime + context.currentTime - startTime;
         newLoop = false;
         return;
     }
 
-    currLoop.stop = context.currentTime - startTime;
+    currLoop.stop = currentTrackTime + context.currentTime - startTime;
     newLoop = true;
     const src = context.createBufferSource();
     src.buffer = cloneAudioBuffer(tracks[0].buffer, currLoop.start, currLoop.stop, reverse);
@@ -141,6 +141,7 @@ function play() {
 
 function pause() {
     playing = false;
+    currentTrackTime += context.currentTime - startTime;
     tracks[0].disconnect(analyserNode);
     tracks.forEach((src) => {
         src.disconnect(context.destination);
@@ -220,26 +221,11 @@ function drawBackgroundTrack() {
 function startVisualization() {
     tracks[0].connect(analyserNode);
     drawChunks();
-    // drawBackgroundTrack();
 }
 
 function drawChunks() {
-    const space = 5;
-    const width = (canvas.width - chunks.length * space) / chunks.length;
-    const heightMultiplier = canvas.height * 2;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.beginPath();
-    for (let i = 0; i < chunks.length; i++) {
-        const height = chunks[i];
-        ctx.rect(width * i + space * i, canvas.height / 2 - (height * (heightMultiplier / 2)), width, height * heightMultiplier);
-    }
-    ctx.closePath();
-    ctx.clip();
-    ctx.fillStyle = '#0dbc6a';
-    ctx.globalAlpha = 0.3;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.globalAlpha = 1;
-    ctx.fillRect(0, 0, canvas.width * ((context.currentTime - startTime) / tracks[0].buffer.duration), canvas.height);
+    ctx.restore();
+    ctx.fillRect(0, 0, canvas.width * ((playing ? currentTrackTime + context.currentTime - startTime : currentTrackTime) / tracks[0].buffer.duration), canvas.height);
     if (playing) {
         requestAnimationFrame(drawChunks);
     }
@@ -251,6 +237,9 @@ function drawEntireTrack() {
     const right = tracks[0].buffer.getChannelData(1);
     // 2. chunk song
     const bytesPerChunk = Math.floor(left.length / numChunks);
+    const space = 5;
+    const width = (canvas.width - chunks.length * space) / chunks.length;
+    const heightMultiplier = canvas.height * 2;
     for (let i = 0; i < numChunks; i++) {
         let nonZeroBytesCount = 0;
         let bytesTotal = 0;
@@ -264,6 +253,19 @@ function drawEntireTrack() {
         }
         chunks[i] = nonZeroBytesCount ? bytesTotal / nonZeroBytesCount : 0;
     }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    for (let i = 0; i < chunks.length; i++) {
+        const height = chunks[i];
+        ctx.rect(width * i + space * i, canvas.height / 2 - (height * (heightMultiplier / 2)), width, height * heightMultiplier);
+    }
+    ctx.closePath();
+    ctx.clip();
+    ctx.fillStyle = '#0dbc6a';
+    ctx.globalAlpha = 0.3;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
+    ctx.save();
     drawChunks();
 }
 
