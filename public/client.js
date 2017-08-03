@@ -45,9 +45,11 @@ let source = context.createBufferSource();
 const gainNode = context.createGain();
 const analyserNode = context.createAnalyser();
 const canvas = document.getElementById('canvas');
-canvas.width = window.innerWidth;
-canvas.height = 300;
+canvas.width = window.innerWidth * 2;
+canvas.height = 300 * 2;
 const ctx = canvas.getContext('2d');
+const numChunks = 128;
+const chunks = new Array(numChunks);
 
 let tracks = [source];
 let playing = false;
@@ -220,8 +222,11 @@ function startVisualization() {
     drawBackgroundTrack();
 }
 
-function drawChunks(chunks) {
-    const space = 3;
+function drawChunks() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, 400);
+    const space = 5;
     const width = (canvas.width - chunks.length * space) / chunks.length;
     const heightMultiplier = canvas.height * 2;
     ctx.fillStyle = '#0dbc6a';
@@ -236,9 +241,7 @@ function drawEntireTrack() {
     const left = tracks[0].buffer.getChannelData(0);
     const right = tracks[0].buffer.getChannelData(1);
     // 2. chunk song
-    const numChunks = 128;
     const bytesPerChunk = Math.floor(left.length / numChunks);
-    const chunks = new Array(numChunks);
     for (let i = 0; i < numChunks; i++) {
         let nonZeroBytesCount = 0;
         let bytesTotal = 0;
@@ -252,10 +255,7 @@ function drawEntireTrack() {
         }
         chunks[i] = nonZeroBytesCount ? bytesTotal / nonZeroBytesCount : 0;
     }
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, 400);
-    drawChunks(chunks);
+    drawChunks();
 }
 
 //========================= setup
