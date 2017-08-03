@@ -221,7 +221,7 @@ function startVisualization() {
 }
 
 function drawChunks(chunks) {
-    const space = 5;
+    const space = 3;
     const width = (canvas.width - chunks.length * space) / chunks.length;
     const heightMultiplier = canvas.height * 2;
     ctx.fillStyle = '#0dbc6a';
@@ -236,11 +236,21 @@ function drawEntireTrack() {
     const left = tracks[0].buffer.getChannelData(0);
     const right = tracks[0].buffer.getChannelData(1);
     // 2. chunk song
-    const numChunks = 64;
+    const numChunks = 128;
     const bytesPerChunk = Math.floor(left.length / numChunks);
     const chunks = new Array(numChunks);
     for (let i = 0; i < numChunks; i++) {
-        chunks[i] = (left[i * bytesPerChunk] + right[i * bytesPerChunk]) / 2;
+        let nonZeroBytesCount = 0;
+        let bytesTotal = 0;
+        for (let j = 0; j < bytesPerChunk; j++) {
+            const byte = Math.abs(left[i * bytesPerChunk + j]) + Math.abs(right[i * bytesPerChunk + j]);
+            if (byte === 0) {
+                break;
+            }
+            bytesTotal += byte;
+            nonZeroBytesCount++;
+        }
+        chunks[i] = nonZeroBytesCount ? bytesTotal / nonZeroBytesCount : 0;
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'white';
