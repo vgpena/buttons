@@ -144,7 +144,6 @@ function pause() {
 }
 
 function connectAllTracks() {
-    tracks[0].connect(analyserNode);
     tracks.forEach((src) => {
         src.connect(context.destination);
     });
@@ -209,13 +208,40 @@ function draw(dataArray) {
 }
 
 function drawBackgroundTrack() {
-    analyserNode.fftSize = 256;
+    analyserNode.fftSize = 32;
     const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
     draw(dataArray);
 }
 
 function startVisualization() {
+    tracks[0].connect(analyserNode);
     drawBackgroundTrack();
+}
+
+function drawChunks(chunks) {
+    const width = 1000 / chunks.length;
+    ctx.fillStyle = 'yellow';
+    for (let i = 0; i < chunks.length; i++) {
+        const height = chunks[i];
+        ctx.fillRect(width * i, 200 - (height * 100), width, height * 200);
+    }
+}
+
+function drawEntireTrack() {
+    // 1. get data from buffer
+    const left = tracks[0].buffer.getChannelData(0);
+    const right = tracks[0].buffer.getChannelData(1);
+    // 2. chunk song
+    const numChunks = 256;
+    const bytesPerChunk = Math.floor(left.length / numChunks);
+    const chunks = new Array();
+    for (let i = 0; i < numChunks; i++) {
+        chunks.push((left[i * bytesPerChunk] + right[i * bytesPerChunk]) / 2);
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgb(0, 0, 0)';
+    ctx.fillRect(0, 0, 1000, 400);
+    drawChunks(chunks);
 }
 
 //========================= setup
@@ -228,6 +254,7 @@ window.fetch(fileUrl)
         tracks[0].loop = true;
         tracks[0].start();
         tracks[0].connect(gainNode);
+        drawEntireTrack();
     });
 
 document.addEventListener('keydown', (e) => {
