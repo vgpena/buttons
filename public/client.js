@@ -234,9 +234,9 @@ function drawEntireTrack() {
     // 2. chunk song
     const numChunks = 256;
     const bytesPerChunk = Math.floor(left.length / numChunks);
-    const chunks = new Array();
+    const chunks = new Array(numChunks);
     for (let i = 0; i < numChunks; i++) {
-        chunks.push((left[i * bytesPerChunk] + right[i * bytesPerChunk]) / 2);
+        chunks[i] = (left[i * bytesPerChunk] + right[i * bytesPerChunk]) / 2;
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'rgb(0, 0, 0)';
