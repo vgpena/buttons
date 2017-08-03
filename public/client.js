@@ -132,16 +132,19 @@ function play() {
     playing = true;
     startTime = context.currentTime;
     connectAllTracks();
+    startVisualization();
 }
 
 function pause() {
     playing = false;
+    tracks[0].disconnect(analyserNode);
     tracks.forEach((src) => {
         src.disconnect(context.destination);
     });
 }
 
 function connectAllTracks() {
+    tracks[0].connect(analyserNode);
     tracks.forEach((src) => {
         src.connect(context.destination);
     });
@@ -189,6 +192,9 @@ function cloneAudioBuffer(audioBuffer, start = 0, stop = audioBuffer.duration, r
 
 // ======== visualization
 function draw(dataArray) {
+    if (!playing) {
+        return;
+    }
     analyserNode.getByteFrequencyData(dataArray);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'rgb(0, 0, 0)';
@@ -222,8 +228,6 @@ window.fetch(fileUrl)
         tracks[0].loop = true;
         tracks[0].start();
         tracks[0].connect(gainNode);
-        tracks[0].connect(analyserNode);
-        startVisualization();
     });
 
 document.addEventListener('keydown', (e) => {
